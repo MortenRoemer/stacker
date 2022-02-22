@@ -103,7 +103,7 @@ impl Pack for str {
         let buffer = self.as_bytes();
         let len = buffer.len() as u32;
         let written = len.pack_into(writer)?;
-        writer.write(&buffer).map(|x| written + x)
+        writer.write(buffer).map(|x| written + x)
     }
 }
 
@@ -111,7 +111,7 @@ impl<T: Pack> Pack for [T] {
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
         let len = self.len() as u32;
         let mut written = len.pack_into(writer)?;
-        
+
         for item in self.iter() {
             written += item.pack_into(writer)?;
         }
@@ -163,7 +163,13 @@ mod tests {
     fn pack_u128() {
         let value: u128 = 2;
         let bytes = value.pack_to_vec().unwrap();
-        assert_eq!(bytes, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02]);
+        assert_eq!(
+            bytes,
+            [
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x02
+            ]
+        );
     }
 
     #[test]
@@ -191,7 +197,13 @@ mod tests {
     fn pack_i128() {
         let value: i128 = -1;
         let bytes = value.pack_to_vec().unwrap();
-        assert_eq!(bytes, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+        assert_eq!(
+            bytes,
+            [
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                0xFF, 0xFF
+            ]
+        );
     }
 
     #[test]
