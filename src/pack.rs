@@ -120,9 +120,17 @@ impl<T: Pack> Pack for [T] {
     }
 }
 
+impl<T: Pack> Pack for dyn AsRef<T> {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let value = self.as_ref();
+        value.pack_into(writer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::rc::Rc;
 
     #[test]
     fn pack_bool() {
@@ -230,6 +238,13 @@ mod tests {
     #[test]
     fn pack_array() {
         let value: [u8; 3] = [1, 2, 3];
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03]);
+    }
+
+    #[test]
+    fn pack_array_pointer() {
+        let value: Rc<[u8; 3]> = Rc::new([1, 2, 3]);
         let bytes = value.pack_to_vec().unwrap();
         assert_eq!(bytes, [0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03]);
     }
