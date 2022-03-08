@@ -1,42 +1,65 @@
-use std::error::Error;
-use std::fmt::Display;
+use std::error;
+use std::fmt::{self, Display, Formatter};
 use std::io;
 use std::rc::Rc;
 use std::string::FromUtf8Error;
 use std::sync::Arc;
 
+/// Describes the ability to deserialize a struct from a sequential bytesource
+/// 
+/// Any type implementing this trait has to be Sized and Owned but this contraints
+/// may change in the future
+/// 
+/// It is not possible to derive this trait, because deserialization may be
+/// sensitive to order and endianness. (Big endianness is assumed for all primitives)
 pub trait Unpack {
+
+    /// Tries to deserialize this struct from a given sequence of bytes
+    /// 
+    /// Deserialization may fail for one of these reasons:
+    /// - any IO-Error ocurred (ErrorKind::Interrupted is ignored)
+    /// - a string contained invalid UTF8 code
+    /// - a custom error previously defined occurred
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self>
     where
         Self: Sized;
 }
 
+/// Error that may occur during deserialization
+/// 
+/// There are three possible reasons deserialization may fail:
+/// - any IO-Error ocurred (ErrorKind::Interrupted is ignored)
+/// - a string contained invalid UTF8 contained
+/// - a custom error previously defined ocurred
 #[derive(Debug)]
-pub enum UnpackError {
-    IOError(io::Error),
-    UTF8Error(FromUtf8Error),
+pub enum Error {
+    IO(io::Error),
+    UTF8(FromUtf8Error),
+    Custom(Box<dyn error::Error>),
 }
 
-impl Display for UnpackError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        use UnpackError::*;
+impl Display for Error {
+    fn fmt(&self, destination: &mut Formatter<'_>) -> std::result::Result<(), fmt::Error> {
+        use Error::*;
         match self {
-            IOError(e) => e.fmt(f),
-            UTF8Error(e) => e.fmt(f),
+            IO(error) => error.fmt(destination),
+            UTF8(error) => error.fmt(destination),
+            Custom(error) => error.fmt(destination),
         }
     }
 }
 
-impl Error for UnpackError {}
+impl error::Error for Error {}
 
-pub type Result<T> = std::result::Result<T, UnpackError>;
+/// Wrapper for a deserialization result
+pub type Result<T> = std::result::Result<T, Error>;
 
 impl Unpack for bool {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         let mut bytes = [0x00];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(bytes[0] != 0xFF)
     }
 }
@@ -46,7 +69,7 @@ impl Unpack for u8 {
         let mut bytes = [0x00];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(bytes[0])
     }
 }
@@ -56,7 +79,7 @@ impl Unpack for u16 {
         let mut bytes = [0x00; 2];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(u16::from_be_bytes(bytes))
     }
 }
@@ -66,7 +89,7 @@ impl Unpack for u32 {
         let mut bytes = [0x00; 4];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(u32::from_be_bytes(bytes))
     }
 }
@@ -76,7 +99,7 @@ impl Unpack for u64 {
         let mut bytes = [0x00; 8];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(u64::from_be_bytes(bytes))
     }
 }
@@ -86,7 +109,7 @@ impl Unpack for u128 {
         let mut bytes = [0x00; 16];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(u128::from_be_bytes(bytes))
     }
 }
@@ -96,7 +119,7 @@ impl Unpack for i16 {
         let mut bytes = [0x00; 2];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(i16::from_be_bytes(bytes))
     }
 }
@@ -106,7 +129,7 @@ impl Unpack for i32 {
         let mut bytes = [0x00; 4];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(i32::from_be_bytes(bytes))
     }
 }
@@ -116,7 +139,7 @@ impl Unpack for i64 {
         let mut bytes = [0x00; 8];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(i64::from_be_bytes(bytes))
     }
 }
@@ -126,7 +149,7 @@ impl Unpack for i128 {
         let mut bytes = [0x00; 16];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(i128::from_be_bytes(bytes))
     }
 }
@@ -136,7 +159,7 @@ impl Unpack for f32 {
         let mut bytes = [0x00; 4];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(f32::from_be_bytes(bytes))
     }
 }
@@ -146,7 +169,7 @@ impl Unpack for f64 {
         let mut bytes = [0x00; 8];
         reader
             .read_exact(&mut bytes)
-            .map_err(UnpackError::IOError)?;
+            .map_err(Error::IO)?;
         Ok(f64::from_be_bytes(bytes))
     }
 }
@@ -155,12 +178,12 @@ impl Unpack for String {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         let mut len = u32::unpack_from(reader)? as usize;
         let mut bytes = Vec::with_capacity(len);
-        let mut buffer = [0x00; 128];
+        let mut buffer = [0x00; 512];
 
         while len > 0 {
             let _read = reader
                 .read(&mut buffer)
-                .map_err(UnpackError::IOError)?;
+                .map_err(Error::IO)?;
 
             len = if len > buffer.len() {
                 bytes.extend_from_slice(&buffer);
@@ -171,7 +194,7 @@ impl Unpack for String {
             }
         }
 
-        String::from_utf8(bytes).map_err(UnpackError::UTF8Error)
+        String::from_utf8(bytes).map_err(Error::UTF8)
     }
 }
 

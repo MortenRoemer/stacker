@@ -1,8 +1,27 @@
 use std::io;
 
+/// Describes the ability to serialize this struct into a sequential
+/// bytestream
+/// 
+/// It is not possible to derive this trait, because implementors
+/// should pay close attention to the order in which they serialize
+/// the attributes of their structs
+/// 
+/// A derived trait would make assumptions
+/// about their order and this would break compatibility with
+/// deserializing those structs later
 pub trait Pack {
+    
+    /// Tries to serialize this struct into a bytestream
+    /// 
+    /// Serialization may fail because of any IO-Error
+    /// (except of the ErrorKind::Interrupted which are ignored)
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize>;
 
+    /// Tries to serialize this struct into a byte-vector
+    /// 
+    /// Serialization may fail because of any IO-Error
+    /// (except of the ErrorKind::Interrupted which are ignored)
     fn pack_to_vec(&self) -> io::Result<Vec<u8>> {
         let mut buffer = Vec::new();
         self.pack_into(&mut buffer)?;
