@@ -1,25 +1,25 @@
 use std::io;
+use std::num::*;
 
 /// Describes the ability to serialize this struct into a sequential
 /// bytestream
-/// 
+///
 /// It is not possible to derive this trait, because implementors
 /// should pay close attention to the order in which they serialize
 /// the attributes of their structs
-/// 
+///
 /// A derived trait would make assumptions
 /// about their order and this would break compatibility with
 /// deserializing those structs later
 pub trait Pack {
-    
     /// Tries to serialize this struct into a bytestream
-    /// 
+    ///
     /// Serialization may fail because of any IO-Error
     /// (except of the ErrorKind::Interrupted which are ignored)
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize>;
 
     /// Tries to serialize this struct into a byte-vector
-    /// 
+    ///
     /// Serialization may fail because of any IO-Error
     /// (except of the ErrorKind::Interrupted which are ignored)
     fn pack_to_vec(&self) -> io::Result<Vec<u8>> {
@@ -47,9 +47,23 @@ impl Pack for u8 {
     }
 }
 
+impl Pack for NonZeroU8 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = [self.get()];
+        writer.write(&buffer)
+    }
+}
+
 impl Pack for u16 {
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
         let buffer = self.to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
+impl Pack for NonZeroU16 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
         writer.write(&buffer)
     }
 }
@@ -61,9 +75,23 @@ impl Pack for u32 {
     }
 }
 
+impl Pack for NonZeroU32 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
 impl Pack for u64 {
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
         let buffer = self.to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
+impl Pack for NonZeroU64 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
         writer.write(&buffer)
     }
 }
@@ -75,9 +103,23 @@ impl Pack for u128 {
     }
 }
 
+impl Pack for NonZeroU128 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
 impl Pack for i16 {
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
         let buffer = self.to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
+impl Pack for NonZeroI16 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
         writer.write(&buffer)
     }
 }
@@ -89,6 +131,13 @@ impl Pack for i32 {
     }
 }
 
+impl Pack for NonZeroI32 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
 impl Pack for i64 {
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
         let buffer = self.to_be_bytes();
@@ -96,9 +145,23 @@ impl Pack for i64 {
     }
 }
 
+impl Pack for NonZeroI64 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
 impl Pack for i128 {
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
         let buffer = self.to_be_bytes();
+        writer.write(&buffer)
+    }
+}
+
+impl Pack for NonZeroI128 {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let buffer = self.get().to_be_bytes();
         writer.write(&buffer)
     }
 }
@@ -166,8 +229,22 @@ mod tests {
     }
 
     #[test]
+    fn pack_non_zero_u8() {
+        let value = NonZeroU8::new(2).unwrap();
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0x02]);
+    }
+
+    #[test]
     fn pack_u16() {
         let value: u16 = 2;
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0x00, 0x02]);
+    }
+
+    #[test]
+    fn pack_non_zero_u16() {
+        let value = NonZeroU16::new(2).unwrap();
         let bytes = value.pack_to_vec().unwrap();
         assert_eq!(bytes, [0x00, 0x02]);
     }
@@ -180,8 +257,22 @@ mod tests {
     }
 
     #[test]
+    fn pack_non_zero_u32() {
+        let value = NonZeroU32::new(2).unwrap();
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0x00, 0x00, 0x00, 0x02]);
+    }
+
+    #[test]
     fn pack_u64() {
         let value: u64 = 2;
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02]);
+    }
+
+    #[test]
+    fn pack_non_zero_u64() {
+        let value = NonZeroU64::new(2).unwrap();
         let bytes = value.pack_to_vec().unwrap();
         assert_eq!(bytes, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02]);
     }
@@ -200,8 +291,28 @@ mod tests {
     }
 
     #[test]
+    fn pack_non_zero_u128() {
+        let value = NonZeroU128::new(2).unwrap();
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(
+            bytes,
+            [
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x02
+            ]
+        );
+    }
+
+    #[test]
     fn pack_i16() {
         let value: i16 = -1;
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0xFF, 0xFF]);
+    }
+
+    #[test]
+    fn pack_non_zero_i16() {
+        let value = NonZeroI16::new(-1).unwrap();
         let bytes = value.pack_to_vec().unwrap();
         assert_eq!(bytes, [0xFF, 0xFF]);
     }
@@ -214,6 +325,13 @@ mod tests {
     }
 
     #[test]
+    fn pack_non_zero_i32() {
+        let value = NonZeroI32::new(-1).unwrap();
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0xFF, 0xFF, 0xFF, 0xFF]);
+    }
+
+    #[test]
     fn pack_i64() {
         let value: i64 = -1;
         let bytes = value.pack_to_vec().unwrap();
@@ -221,8 +339,28 @@ mod tests {
     }
 
     #[test]
+    fn pack_non_zero_i64() {
+        let value = NonZeroI64::new(-1).unwrap();
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(bytes, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+    }
+
+    #[test]
     fn pack_i128() {
         let value: i128 = -1;
+        let bytes = value.pack_to_vec().unwrap();
+        assert_eq!(
+            bytes,
+            [
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                0xFF, 0xFF
+            ]
+        );
+    }
+
+    #[test]
+    fn pack_non_zero_i128() {
+        let value = NonZeroI128::new(-1).unwrap();
         let bytes = value.pack_to_vec().unwrap();
         assert_eq!(
             bytes,
