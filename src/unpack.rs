@@ -78,6 +78,14 @@ impl Unpack for NonZeroU8 {
     }
 }
 
+impl Unpack for Option<NonZeroU8> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroU8::new(bytes[0]))
+    }
+}
+
 impl Unpack for u16 {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         let mut bytes = [0x00; 2];
@@ -91,6 +99,14 @@ impl Unpack for NonZeroU16 {
         let mut bytes = [0x00; 2];
         reader.read_exact(&mut bytes).map_err(Error::IO)?;
         Ok(NonZeroU16::new(u16::from_be_bytes(bytes)).unwrap())
+    }
+}
+
+impl Unpack for Option<NonZeroU16> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 2];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroU16::new(u16::from_be_bytes(bytes)))
     }
 }
 
@@ -110,6 +126,14 @@ impl Unpack for NonZeroU32 {
     }
 }
 
+impl Unpack for Option<NonZeroU32> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 4];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroU32::new(u32::from_be_bytes(bytes)))
+    }
+}
+
 impl Unpack for u64 {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         let mut bytes = [0x00; 8];
@@ -123,6 +147,14 @@ impl Unpack for NonZeroU64 {
         let mut bytes = [0x00; 8];
         reader.read_exact(&mut bytes).map_err(Error::IO)?;
         Ok(NonZeroU64::new(u64::from_be_bytes(bytes)).unwrap())
+    }
+}
+
+impl Unpack for Option<NonZeroU64> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 8];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroU64::new(u64::from_be_bytes(bytes)))
     }
 }
 
@@ -142,6 +174,14 @@ impl Unpack for NonZeroU128 {
     }
 }
 
+impl Unpack for Option<NonZeroU128> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 16];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroU128::new(u128::from_be_bytes(bytes)))
+    }
+}
+
 impl Unpack for i16 {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         let mut bytes = [0x00; 2];
@@ -155,6 +195,14 @@ impl Unpack for NonZeroI16 {
         let mut bytes = [0x00; 2];
         reader.read_exact(&mut bytes).map_err(Error::IO)?;
         Ok(NonZeroI16::new(i16::from_be_bytes(bytes)).unwrap())
+    }
+}
+
+impl Unpack for Option<NonZeroI16> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 2];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroI16::new(i16::from_be_bytes(bytes)))
     }
 }
 
@@ -174,6 +222,14 @@ impl Unpack for NonZeroI32 {
     }
 }
 
+impl Unpack for Option<NonZeroI32> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 4];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroI32::new(i32::from_be_bytes(bytes)))
+    }
+}
+
 impl Unpack for i64 {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         let mut bytes = [0x00; 8];
@@ -190,6 +246,14 @@ impl Unpack for NonZeroI64 {
     }
 }
 
+impl Unpack for Option<NonZeroI64> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 8];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroI64::new(i64::from_be_bytes(bytes)))
+    }
+}
+
 impl Unpack for i128 {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         let mut bytes = [0x00; 16];
@@ -203,6 +267,14 @@ impl Unpack for NonZeroI128 {
         let mut bytes = [0x00; 16];
         reader.read_exact(&mut bytes).map_err(Error::IO)?;
         Ok(NonZeroI128::new(i128::from_be_bytes(bytes)).unwrap())
+    }
+}
+
+impl Unpack for Option<NonZeroI128> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let mut bytes = [0x00; 16];
+        reader.read_exact(&mut bytes).map_err(Error::IO)?;
+        Ok(NonZeroI128::new(i128::from_be_bytes(bytes)))
     }
 }
 
@@ -301,6 +373,14 @@ mod tests {
     }
 
     #[test]
+    fn unpack_non_zero_option_u8() {
+        type Value = Option<NonZeroU8>;
+        let bytes = [0xFF];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroU8::new(255));
+    }
+
+    #[test]
     fn unpack_u16() {
         let bytes = [0x00, 0x02];
         let value = u16::unpack_from(&mut bytes.as_ref()).unwrap();
@@ -312,6 +392,14 @@ mod tests {
         let bytes = [0x00, 0x02];
         let value = NonZeroU16::unpack_from(&mut bytes.as_ref()).unwrap();
         assert_eq!(value, NonZeroU16::new(2).unwrap());
+    }
+
+    #[test]
+    fn unpack_non_zero_option_u16() {
+        type Value = Option<NonZeroU16>;
+        let bytes = [0x00, 0x02];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroU16::new(2));
     }
 
     #[test]
@@ -329,6 +417,14 @@ mod tests {
     }
 
     #[test]
+    fn unpack_non_zero_option_u32() {
+        type Value = Option<NonZeroU32>;
+        let bytes = [0x00, 0x00, 0x00, 0x02];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroU32::new(2));
+    }
+
+    #[test]
     fn unpack_u64() {
         let bytes = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02];
         let value = u64::unpack_from(&mut bytes.as_ref()).unwrap();
@@ -340,6 +436,14 @@ mod tests {
         let bytes = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02];
         let value = NonZeroU64::unpack_from(&mut bytes.as_ref()).unwrap();
         assert_eq!(value, NonZeroU64::new(2).unwrap());
+    }
+
+    #[test]
+    fn unpack_non_zero_option_u64() {
+        type Value = Option<NonZeroU64>;
+        let bytes = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroU64::new(2));
     }
 
     #[test]
@@ -363,6 +467,17 @@ mod tests {
     }
 
     #[test]
+    fn unpack_non_zero_option_u128() {
+        type Value = Option<NonZeroU128>;
+        let bytes = [
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x02,
+        ];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroU128::new(2));
+    }
+
+    #[test]
     fn unpack_i16() {
         let bytes = [0xFF, 0xFF];
         let value = i16::unpack_from(&mut bytes.as_ref()).unwrap();
@@ -374,6 +489,14 @@ mod tests {
         let bytes = [0xFF, 0xFF];
         let value = NonZeroI16::unpack_from(&mut bytes.as_ref()).unwrap();
         assert_eq!(value, NonZeroI16::new(-1).unwrap());
+    }
+
+    #[test]
+    fn unpack_non_zero_option_i16() {
+        type Value = Option<NonZeroI16>;
+        let bytes = [0xFF, 0xFF];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroI16::new(-1));
     }
 
     #[test]
@@ -391,6 +514,14 @@ mod tests {
     }
 
     #[test]
+    fn unpack_non_zero_option_i32() {
+        type Value = Option<NonZeroI32>;
+        let bytes = [0xFF, 0xFF, 0xFF, 0xFF];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroI32::new(-1));
+    }
+
+    #[test]
     fn unpack_i64() {
         let bytes = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
         let value = i64::unpack_from(&mut bytes.as_ref()).unwrap();
@@ -402,6 +533,14 @@ mod tests {
         let bytes = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
         let value = NonZeroI64::unpack_from(&mut bytes.as_ref()).unwrap();
         assert_eq!(value, NonZeroI64::new(-1).unwrap());
+    }
+
+    #[test]
+    fn unpack_non_zero_option_i64() {
+        type Value = Option<NonZeroI64>;
+        let bytes = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroI64::new(-1));
     }
 
     #[test]
@@ -422,6 +561,17 @@ mod tests {
         ];
         let value = NonZeroI128::unpack_from(&mut bytes.as_ref()).unwrap();
         assert_eq!(value, NonZeroI128::new(-1).unwrap());
+    }
+
+    #[test]
+    fn unpack_non_zero_option_i128() {
+        type Value = Option<NonZeroI128>;
+        let bytes = [
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF,
+        ];
+        let value = Value::unpack_from(&mut bytes.as_ref()).unwrap();
+        assert_eq!(value, NonZeroI128::new(-1));
     }
 
     #[test]
