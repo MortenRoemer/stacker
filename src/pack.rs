@@ -1,3 +1,8 @@
+use std::collections::binary_heap::*;
+use std::collections::btree_map::*;
+use std::collections::btree_set::*;
+use std::collections::hash_map::*;
+use std::collections::hash_set::*;
 use std::io;
 use std::num::*;
 
@@ -305,6 +310,73 @@ impl<T: Pack> Pack for dyn AsRef<T> {
     fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
         let value = self.as_ref();
         value.pack_into(writer)
+    }
+}
+
+impl<K: Pack, V: Pack> Pack for HashMap<K, V> {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let len = self.len() as u32;
+        let mut written = len.pack_into(writer)?;
+
+        for (key, value) in self.iter() {
+            written += key.pack_into(writer)?;
+            written += value.pack_into(writer)?;
+        }
+
+        Ok(written)
+    }
+}
+
+impl<T: Pack> Pack for HashSet<T> {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let len = self.len() as u32;
+        let mut written = len.pack_into(writer)?;
+
+        for value in self.iter() {
+            written += value.pack_into(writer)?;
+        }
+
+        Ok(written)
+    }
+}
+
+impl<K: Pack, V: Pack> Pack for BTreeMap<K, V> {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let len = self.len() as u32;
+        let mut written = len.pack_into(writer)?;
+
+        for (key, value) in self.iter() {
+            written += key.pack_into(writer)?;
+            written += value.pack_into(writer)?;
+        }
+
+        Ok(written)
+    }
+}
+
+impl<T: Pack> Pack for BTreeSet<T> {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let len = self.len() as u32;
+        let mut written = len.pack_into(writer)?;
+
+        for value in self.iter() {
+            written += value.pack_into(writer)?;
+        }
+
+        Ok(written)
+    }
+}
+
+impl<T: Pack> Pack for BinaryHeap<T> {
+    fn pack_into(&self, writer: &mut impl io::Write) -> io::Result<usize> {
+        let len = self.len() as u32;
+        let mut written = len.pack_into(writer)?;
+
+        for value in self.iter() {
+            written += value.pack_into(writer)?;
+        }
+
+        Ok(written)
     }
 }
 

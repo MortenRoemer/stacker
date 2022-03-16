@@ -1,3 +1,8 @@
+use std::collections::binary_heap::*;
+use std::collections::btree_map::*;
+use std::collections::btree_set::*;
+use std::collections::hash_map::*;
+use std::collections::hash_set::*;
 use std::error;
 use std::fmt::{self, Display, Formatter};
 use std::io;
@@ -344,6 +349,78 @@ impl<T: Unpack> Unpack for Rc<T> {
 impl<T: Unpack> Unpack for Arc<T> {
     fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
         T::unpack_from(reader).map(|x| Arc::new(x))
+    }
+}
+
+impl<K: Unpack + std::cmp::Eq + std::hash::Hash, V: Unpack> Unpack for HashMap<K, V> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let len = u32::unpack_from(reader)? as usize;
+        let mut result = HashMap::with_capacity(len);
+
+        for _i in 0..len {
+            let key = K::unpack_from(reader)?;
+            let value = V::unpack_from(reader)?;
+            result.insert(key, value);
+        }
+
+        Ok(result)
+    }
+}
+
+impl<T: Unpack + std::cmp::Eq + std::hash::Hash> Unpack for HashSet<T> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let len = u32::unpack_from(reader)? as usize;
+        let mut result = HashSet::with_capacity(len);
+
+        for _i in 0..len {
+            let value = T::unpack_from(reader)?;
+            result.insert(value);
+        }
+
+        Ok(result)
+    }
+}
+
+impl<K: Unpack + std::cmp::Ord, V: Unpack> Unpack for BTreeMap<K, V> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let len = u32::unpack_from(reader)? as usize;
+        let mut result = BTreeMap::new();
+
+        for _i in 0..len {
+            let key = K::unpack_from(reader)?;
+            let value = V::unpack_from(reader)?;
+            result.insert(key, value);
+        }
+
+        Ok(result)
+    }
+}
+
+impl<T: Unpack + std::cmp::Ord> Unpack for BTreeSet<T> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let len = u32::unpack_from(reader)? as usize;
+        let mut result = BTreeSet::new();
+
+        for _i in 0..len {
+            let value = T::unpack_from(reader)?;
+            result.insert(value);
+        }
+
+        Ok(result)
+    }
+}
+
+impl<T: Unpack + std::cmp::Ord> Unpack for BinaryHeap<T> {
+    fn unpack_from(reader: &mut impl io::Read) -> Result<Self> {
+        let len = u32::unpack_from(reader)? as usize;
+        let mut result = BinaryHeap::new();
+
+        for _i in 0..len {
+            let value = T::unpack_from(reader)?;
+            result.push(value);
+        }
+
+        Ok(result)
     }
 }
 
